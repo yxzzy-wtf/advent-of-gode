@@ -21,7 +21,60 @@ func main() {
 func run(part2 bool, input string) any {
 	// when you're ready to do part 2, remove this "not implemented" block
 	if part2 {
-		return "not implemented"
+		sum := 0
+
+		gameIdRxp := regexp.MustCompile(`Game (?P<ID>\d+):(?P<Data>.*)`)
+
+		for _, line := range strings.Split(input, "\n") {
+
+			matches := gameIdRxp.FindStringSubmatch(line)
+			if len(matches) == 0 {
+				continue
+			}
+
+			data := matches[2]
+
+			redMax := 0
+			greenMax := 0
+			blueMax := 0
+
+			for _, draw := range strings.Split(data, ";") {
+				redDraw := 0
+				greenDraw := 0
+				blueDraw := 0
+
+				for _, single := range strings.Split(strings.Trim(draw, " "), ",") {
+					split := strings.Split(strings.Trim(single, " "), " ")
+
+					count, _ := strconv.Atoi(strings.Trim(split[0], " "))
+					colour := split[1]
+
+					if colour == "red" {
+						redDraw += count
+					} else if colour == "blue" {
+						blueDraw += count
+					} else if colour == "green" {
+						greenDraw += count
+					}
+				}
+
+				if redDraw > redMax {
+					redMax = redDraw
+				}
+				if greenDraw > greenMax {
+					greenMax = greenDraw
+				}
+				if blueDraw > blueMax {
+					blueMax = blueDraw
+				}
+
+			}
+
+			power := redMax * greenMax * blueMax
+			sum += power
+		}
+
+		return sum
 	}
 	// solve part 1 here
 
