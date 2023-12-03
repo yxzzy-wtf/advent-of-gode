@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 	"unicode"
@@ -12,15 +13,15 @@ func main() {
 	aoc.Harness(run)
 }
 
-func getNumberAndBlank(schema [][]rune, x int, y int) int {
+func getNumberAndBlank(schema [][]rune, x int, y int) (int, error) {
 	if x < 0 || x >= len(schema) || y < 0 || y >= len(schema[x]) {
 		// Out of bounds
-		return 0
+		return 0, errors.New("out of bounds")
 	}
 
 	if !unicode.IsNumber(schema[x][y]) {
 		// Not a number to start
-		return 0
+		return 0, errors.New("is not number")
 	}
 
 	// Moves along y to find the first character...
@@ -43,7 +44,7 @@ func getNumberAndBlank(schema [][]rune, x int, y int) int {
 
 	num, _ := strconv.Atoi(numStr)
 
-	return num
+	return num, nil
 }
 
 // on code change, run will be executed 4 times:
@@ -61,9 +62,39 @@ func run(part2 bool, input string) any {
 		}
 	}
 
-	// when you're ready to do part 2, remove this "not implemented" block
 	if part2 {
-		return "not implemented"
+		// Go through array, if we find a * character, find adjacent gears (we cannot blank permanently)
+		gearSum := 0
+		for x, _ := range schematic {
+			for y, _ := range schematic[x] {
+				if schematic[x][y] != '*' {
+					// Cannot be a gear
+					continue
+				}
+
+				adjParts := make([]int, 0)
+
+				// Else, it's a symbol! Go around and, if there are any numbers, assemble them
+				// must make a copy of the schematic so as to only blank locally
+				tempSchema := schematic
+				for xi := x - 1; xi < x+2; xi++ {
+					for yi := y - 1; yi < y+2; yi++ {
+						part, err := getNumberAndBlank(tempSchema, xi, yi)
+						if err == nil {
+							adjParts = append(adjParts, part)
+						}
+					}
+				}
+				if len(adjParts) == 2 {
+					// Is a gear
+					gearRatio := adjParts[0] * adjParts[1]
+					gearSum += gearRatio
+				}
+
+			}
+		}
+
+		return gearSum
 	}
 	// solve part 1 here
 
@@ -78,7 +109,10 @@ func run(part2 bool, input string) any {
 			// Else, it's a symbol! Go around and, if there are any numbers, assemble them
 			for xi := x - 1; xi < x+2; xi++ {
 				for yi := y - 1; yi < y+2; yi++ {
-					engineSum += getNumberAndBlank(schematic, xi, yi)
+					part, err := getNumberAndBlank(schematic, xi, yi)
+					if err == nil {
+						engineSum += part
+					}
 				}
 			}
 
