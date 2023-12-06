@@ -31,32 +31,28 @@ func canBeat(timeCharged int, data []int) bool {
 // 4. with: true (part2), and user input
 // the return value of each run is printed to stdout
 func run(part2 bool, input string) any {
-	// when you're ready to do part 2, remove this "not implemented" block
+	pairs := make([][]int, 0)
+	var lines []string
 	if part2 {
-		return "not implemented"
+		lines = strings.Split(strings.ReplaceAll(input, " ", ""), "\n")
+	} else {
+		lines = strings.Split(input, "\n")
 	}
-	// solve part 1 here
 
-	lines := strings.Split(input, "\n")
 	numGet := regexp.MustCompile(`\d+`)
-
 	timeS := numGet.FindAllString(lines[0], -1)
 	distS := numGet.FindAllString(lines[1], -1)
 
-	pairs := make([][]int, 0)
 	for i := range timeS {
 		time, _ := strconv.Atoi(timeS[i])
 		dist, _ := strconv.Atoi(distS[i])
 		pairs = append(pairs, []int{time, dist})
 	}
+	// solve part 1 here
 
 	// Binary search to find any midpoint where you can win
-
 	marginOfError := 1
 	for _, pair := range pairs {
-
-		//possibleRange := []int{1, pair[0] - 1}
-
 		possibleStartRange := []int{0, pair[0]}
 		start := pair[0] / 2
 
@@ -86,7 +82,6 @@ func run(part2 bool, input string) any {
 		}
 
 		marginOfError *= end - start + 1
-
 	}
 
 	return marginOfError
