@@ -31,19 +31,26 @@ func run(part2 bool, input string) any {
 	}
 
 	if part2 {
-		return "not implemented"
+		sumPrevs := 0
+		for _, d := range data {
+			_, prev := extrapolate(d)
+			sumPrevs += prev
+		}
+
+		return sumPrevs
 	}
 	// solve part 1 here
 
 	sumNexts := 0
 	for _, d := range data {
-		sumNexts += getNext(d)
+		next, _ := extrapolate(d)
+		sumNexts += next
 	}
 
 	return sumNexts
 }
 
-func getNext(data []int) int {
+func extrapolate(data []int) (next int, prev int) {
 	diffTriangle := make([][]int, 0)
 	diffTriangle = append(diffTriangle, data)
 
@@ -52,12 +59,12 @@ func getNext(data []int) int {
 		//fmt.Printf("%v\n", diffTriangle[len(diffTriangle)-1])
 	}
 
-	add := 0
 	for i := len(diffTriangle) - 2; i >= 0; i -= 1 {
-		add += diffTriangle[i][len(diffTriangle[i])-1]
+		next += diffTriangle[i][len(diffTriangle[i])-1]
+		prev = diffTriangle[i][0] - prev
 	}
 
-	return add
+	return next, prev
 }
 
 func getDiffs(data []int) []int {
