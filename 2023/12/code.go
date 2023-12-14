@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -17,33 +18,58 @@ func main() {
 // 3. with: false (part1), and user input
 // 4. with: true (part2), and user input
 // the return value of each run is printed to stdout
+var cache = make(map[string]int)
+
 func run(part2 bool, input string) any {
+	sum := 0
 	// when you're ready to do part 2, remove this "not implemented" block
 	if part2 {
-		return "not implemented"
+		for _, l := range strings.Split(input, "\n") {
+			if l == "" {
+				continue
+			}
+
+			spl := strings.Split(l, " ")
+			combo := make([]int, 0)
+			comboBase := make([]int, 0)
+			for _, c := range strings.Split(spl[1], ",") {
+				ci, _ := strconv.Atoi(c)
+				combo = append(combo, ci)
+				comboBase = append(comboBase, ci)
+			}
+
+			springs := spl[0]
+
+			// unfold
+			for i := 0; i < 4; i++ {
+				springs += "?" + spl[0]
+
+				comboBase = append(comboBase, combo...)
+			}
+			poss := iteratePossibilities(springs, comboBase)
+
+			sum += poss
+		}
+
+		return sum
+	} else {
+		// Part 1
+		for _, l := range strings.Split(input, "\n") {
+			if l == "" {
+				continue
+			}
+
+			spl := strings.Split(l, " ")
+			combo := make([]int, 0)
+			for _, c := range strings.Split(spl[1], ",") {
+				ci, _ := strconv.Atoi(c)
+				combo = append(combo, ci)
+			}
+			poss := iteratePossibilities(spl[0], combo)
+			sum += poss
+		}
 	}
 	// solve part 1 here
-
-	sum := 0
-	for _, l := range strings.Split(input, "\n") {
-		if l == "" {
-			continue
-		}
-
-		spl := strings.Split(l, " ")
-		combo := make([]int, 0)
-		for _, c := range strings.Split(spl[1], ",") {
-			ci, _ := strconv.Atoi(c)
-			combo = append(combo, ci)
-		}
-
-		//fmt.Printf("\nLooking   in %v %v\n", spl[0], combo)
-		poss := iteratePossibilities(spl[0], combo)
-
-		//fmt.Printf("In %v %v: %v\n", spl[0], combo, poss)
-
-		sum += poss
-	}
 
 	return sum
 }
@@ -105,12 +131,18 @@ func iteratePossibilities(springs string, combo []int) int {
 			}
 
 			if !anyFuture {
-				//fmt.Printf("MATCHED %v in %v from [%v;%v)\n", lenMatch, springs, i, i+lenMatch-1)
 				p += 1
 			}
 		} else {
-			//fmt.Printf("Matched %v in %v from [%v;%v)\n", lenMatch, springs, i, i+lenMatch-1)
-			p += iteratePossibilities(springs[matchFrom:], combo[1:])
+			matchKey := fmt.Sprintf("%v : %v", springs[matchFrom:], combo[1:])
+
+			if precount, ok := cache[matchKey]; ok {
+				p += precount
+			} else {
+				poss := iteratePossibilities(springs[matchFrom:], combo[1:])
+				cache[matchKey] = poss
+				p += poss
+			}
 		}
 
 		if forceMatch {
