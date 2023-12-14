@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/jpillora/puzzler/harness/aoc"
@@ -35,16 +34,43 @@ func run(part2 bool, input string) any {
 	}
 
 	if part2 {
-		return "not implemented"
+		matchMap := make(map[string]int)
+		cycleVal := make(map[int]int)
+		cycleStart := -1
+		cycleEnd := -1
+		for i := 1; i <= 1000000000; i++ {
+			grid = spin(grid)
+			gridStr := gridString(grid)
+
+			if at, ok := matchMap[gridStr]; ok {
+				cycleVal[at] = northLoad(grid)
+				if cycleStart == -1 {
+					cycleStart = at
+				} else if at > cycleStart {
+					cycleEnd = at
+				} else {
+					// Found our full cycle, break
+					break
+				}
+			} else {
+				matchMap[gridStr] = i
+			}
+		}
+
+		cycleLen := cycleEnd - cycleStart + 1
+		// calculate which cycle will be the 1000000000th
+		cycle := cycleStart + (1000000000-cycleStart)%cycleLen
+
+		return cycleVal[cycle]
 	}
-	// solve part 1 here
 
-	printGrid(grid)
 	grid = tilt(grid, 'N')
-	printGrid(grid)
+	return northLoad(grid)
+}
 
-	distToS := len(grid)
+func northLoad(grid [][]rune) int {
 	load := 0
+	distToS := len(grid)
 	for v := 0; v < len(grid); v++ {
 		for h := 0; h < len(grid[v]); h++ {
 			if grid[v][h] == 'O' {
@@ -56,19 +82,22 @@ func run(part2 bool, input string) any {
 	return load
 }
 
-func printGrid(grid [][]rune) {
-	print := false
-
-	if print {
-		fmt.Println("-----")
-		for v := 0; v < len(grid); v++ {
-			for h := 0; h < len(grid[v]); h++ {
-				fmt.Printf("%v", string(grid[v][h]))
-			}
-			fmt.Println()
+func gridString(grid [][]rune) string {
+	s := ""
+	for v := 0; v < len(grid); v++ {
+		for h := 0; h < len(grid[v]); h++ {
+			s += string(grid[v][h])
 		}
-		fmt.Println("-----")
 	}
+	return s
+}
+
+func spin(grid [][]rune) [][]rune {
+	grid = tilt(grid, 'N')
+	grid = tilt(grid, 'W')
+	grid = tilt(grid, 'S')
+	grid = tilt(grid, 'E')
+	return grid
 }
 
 func tilt(grid [][]rune, dir rune) [][]rune {
@@ -77,20 +106,78 @@ func tilt(grid [][]rune, dir rune) [][]rune {
 			for h := 0; h < len(grid[v]); h++ {
 				if grid[v][h] == 'O' {
 					// Move up as far as possible:
-				rolling:
+				rollingN:
 					for mv := v - 1; mv >= 0; mv-- {
 						if grid[mv][h] == '.' {
 							// swap and continue
 							grid[mv][h] = 'O'
 							grid[mv+1][h] = '.'
 						} else {
-							break rolling
+							break rollingN
 						}
 					}
 				}
 			}
 		}
 
+		return grid
+	} else if dir == 'S' {
+		for v := len(grid) - 1; v >= 0; v-- {
+			for h := 0; h < len(grid[v]); h++ {
+				if grid[v][h] == 'O' {
+					// Move down as far as possible:
+				rollingS:
+					for mv := v + 1; mv < len(grid); mv++ {
+						if grid[mv][h] == '.' {
+							// swap and continue
+							grid[mv][h] = 'O'
+							grid[mv-1][h] = '.'
+						} else {
+							break rollingS
+						}
+					}
+				}
+			}
+		}
+
+		return grid
+	} else if dir == 'E' {
+		for h := len(grid[0]) - 1; h >= 0; h-- {
+			for v := 0; v < len(grid); v++ {
+				if grid[v][h] == 'O' {
+					// Move right as far as possible:
+				rollingE:
+					for mh := h + 1; mh < len(grid); mh++ {
+						if grid[v][mh] == '.' {
+							// swap and continue
+							grid[v][mh] = 'O'
+							grid[v][mh-1] = '.'
+						} else {
+							break rollingE
+						}
+					}
+				}
+			}
+		}
+		return grid
+	} else if dir == 'W' {
+		for h := 0; h < len(grid[0]); h++ {
+			for v := 0; v < len(grid); v++ {
+				if grid[v][h] == 'O' {
+					// Move right as far as possible:
+				rollingW:
+					for mh := h - 1; mh >= 0; mh-- {
+						if grid[v][mh] == '.' {
+							// swap and continue
+							grid[v][mh] = 'O'
+							grid[v][mh+1] = '.'
+						} else {
+							break rollingW
+						}
+					}
+				}
+			}
+		}
 		return grid
 	}
 
