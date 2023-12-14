@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -37,82 +36,87 @@ func run(part2 bool, input string) any {
 			ci, _ := strconv.Atoi(c)
 			combo = append(combo, ci)
 		}
-		springs := make([]rune, 0)
-		for _, r := range strings.Split(spl[0], "") {
-			springs = append(springs, rune(r[0]))
-		}
-		p := iteratePossibilities(spl[0]+".", combo, 0)
 
-		sum += p
+		//fmt.Printf("\nLooking   in %v %v\n", spl[0], combo)
+		poss := iteratePossibilities(spl[0], combo)
+
+		//fmt.Printf("In %v %v: %v\n", spl[0], combo, poss)
+
+		sum += poss
 	}
 
 	return sum
 }
 
-func iteratePossibilities(springs string, combo []int, depth int) int {
+func iteratePossibilities(springs string, combo []int) int {
 	if len(combo) == 0 {
-		panic("Can't try find possibilities with empty combo list")
+		panic("Combo is empty")
 	}
-	sprlen := combo[0] + 1
 
-	print(fmt.Sprintf("%v:", springs), depth)
-	if len(springs) < sprlen {
-		// Can't fit, bad match
-		print(fmt.Sprintf("Cannot fit combo len %v in remaining springs %v", sprlen, springs), depth)
+	lenMatch := combo[0]
+
+	if len(springs) < lenMatch {
+		// Cannot match, not enough space
 		return 0
 	}
 
 	p := 0
-	for i := 0; i <= len(springs)-sprlen; i++ {
+	for i := 0; i < len(springs)-lenMatch+1; i++ {
 		match := true
-		forcedMatch := true
-		checking := springs[i : i+sprlen]
-		print(fmt.Sprintf("Testing %v in %v", checking, springs), depth)
+		forceMatch := false
+		for m := i; m < i+lenMatch; m++ {
+			if rune(springs[m]) == '.' {
+				match = false
+			}
 
-		for c, r := range checking {
-			if rune(r) == '#' {
-				if c == sprlen-1 {
-					print("Failed match: ends with damaged (would be non-contiguous)", depth)
-					match = false
-				}
-			} else if rune(r) == '.' {
-				if c != sprlen-1 {
-					print("Failed match: contained undamaged", depth)
-					match = false
-				}
-			} else {
-				if c != sprlen-1 {
-					print(fmt.Sprintf("NOT forced match at %v", c), depth)
-					forcedMatch = false
-				}
+			if rune(springs[m]) == '#' && i == m {
+				forceMatch = true
 			}
 		}
 
-		if match {
-			print(fmt.Sprintf("Found %v+1 match (forced=%v) in %v at %v-%v (%v) (remaining: %v)", combo[0], forcedMatch, springs, i, i+sprlen-1, springs[i:i+sprlen], combo[1:]), depth)
-
-			if len(combo) > 1 {
-				p += iteratePossibilities(springs[i+sprlen:], combo[1:], depth+1)
-			} else {
-				p += 1
-			}
-
-			if forcedMatch {
-				print("Forced match, not trying any other combos for this", depth)
+		if !match {
+			// Keep trying
+			if forceMatch {
 				break
 			}
+			continue
+		}
+
+		matchFrom := i + lenMatch
+		if len(springs) > i+lenMatch {
+			if rune(springs[i+lenMatch]) == '#' {
+				// Would be contigious, does not work
+				if forceMatch {
+					break
+				}
+				continue
+			}
+			matchFrom += 1
+		}
+
+		// Cool! We are matched!
+		if len(combo) == 1 {
+			// Check, finally, that there are no possible # in the future (which would violate the requirements)
+			anyFuture := false
+			for j := matchFrom; j < len(springs); j++ {
+				if rune(springs[j]) == '#' {
+					anyFuture = true
+				}
+			}
+
+			if !anyFuture {
+				//fmt.Printf("MATCHED %v in %v from [%v;%v)\n", lenMatch, springs, i, i+lenMatch-1)
+				p += 1
+			}
+		} else {
+			//fmt.Printf("Matched %v in %v from [%v;%v)\n", lenMatch, springs, i, i+lenMatch-1)
+			p += iteratePossibilities(springs[matchFrom:], combo[1:])
+		}
+
+		if forceMatch {
+			break
 		}
 	}
 
 	return p
-}
-
-func print(pr string, depth int) {
-	print := false
-	if print {
-		for i := 0; i < depth; i++ {
-			fmt.Printf("> ")
-		}
-		fmt.Println(pr)
-	}
 }
