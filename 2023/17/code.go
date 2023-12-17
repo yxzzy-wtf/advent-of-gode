@@ -65,6 +65,16 @@ func removeDuplicates(paths []Path) []Path {
 }
 
 func run(part2 bool, input string) any {
+
+	// when you're ready to do part 2, remove this "not implemented" block
+	maxBeforeTurning := 3
+	minBeforeTurning := 0
+
+	if part2 {
+		maxBeforeTurning = 10
+		minBeforeTurning = 4
+	}
+
 	grid := make([][]WeightedCell, 0)
 	for v, l := range strings.Split(input, "\n") {
 		if l == "" {
@@ -75,103 +85,112 @@ func run(part2 bool, input string) any {
 		for h, c := range strings.Split(l, "") {
 			m, _ := strconv.Atoi(c)
 			wc := WeightedCell{v, h, m,
-				[]int{math.MaxInt, math.MaxInt, math.MaxInt},
-				[]int{math.MaxInt, math.MaxInt, math.MaxInt},
-				[]int{math.MaxInt, math.MaxInt, math.MaxInt},
-				[]int{math.MaxInt, math.MaxInt, math.MaxInt}}
+				make([]int, 0),
+				make([]int, 0),
+				make([]int, 0),
+				make([]int, 0)}
+
+			for t := 0; t < maxBeforeTurning; t++ {
+				if v == 0 && h == 0 {
+					wc.N = append(wc.N, m)
+					wc.S = append(wc.S, m)
+					wc.E = append(wc.E, m)
+					wc.W = append(wc.W, m)
+				} else {
+					wc.N = append(wc.N, math.MaxInt)
+					wc.S = append(wc.S, math.MaxInt)
+					wc.E = append(wc.E, math.MaxInt)
+					wc.W = append(wc.W, math.MaxInt)
+				}
+			}
+
 			gridLine = append(gridLine, wc)
 		}
 		grid = append(grid, gridLine)
 	}
 
-	// when you're ready to do part 2, remove this "not implemented" block
-	if part2 {
-		return "not implemented"
-	}
 	// solve part 1 here
 
-	grid[0][0].N = []int{grid[0][0].HeatLoss, grid[0][0].HeatLoss, grid[0][0].HeatLoss}
-	grid[0][0].S = []int{grid[0][0].HeatLoss, grid[0][0].HeatLoss, grid[0][0].HeatLoss}
-	grid[0][0].E = []int{grid[0][0].HeatLoss, grid[0][0].HeatLoss, grid[0][0].HeatLoss}
-	grid[0][0].W = []int{grid[0][0].HeatLoss, grid[0][0].HeatLoss, grid[0][0].HeatLoss}
-
 	paths := []Path{
-		{0, 0, 'E', 3, grid[0][0].HeatLoss, []Step{{0, 0}}},
-		{0, 0, 'S', 3, grid[0][0].HeatLoss, []Step{{0, 0}}},
+		{0, 0, 'E', maxBeforeTurning, grid[0][0].HeatLoss, []Step{{0, 0}}},
+		{0, 0, 'S', maxBeforeTurning, grid[0][0].HeatLoss, []Step{{0, 0}}},
 	}
 
 	var p Path
 	for len(paths) > 0 {
 		p, paths = paths[0], paths[1:]
 
-		if p.CurrentV == len(grid)-1 && p.CurrentH == len(grid[0])-1 {
-			break
-		}
-
 		// Check L and R
-		if p.CurrentDirection == 'N' || p.CurrentDirection == 'S' {
-			// E & W
-			eH := p.CurrentH + 1
-			if eH < len(grid[p.CurrentV]) {
-				eC := grid[p.CurrentV][eH]
-				if eC.HeatLoss+p.HeatLoss < eC.E[2] {
-					eC.E[2] = eC.HeatLoss + p.HeatLoss
-
-					eClone := make([]Step, len(p.Steps))
-					copy(eClone, p.Steps)
-					eClone = append(eClone, Step{p.CurrentV, eH})
-
-					ePath := Path{p.CurrentV, eH, 'E', 2, eC.E[2], eClone}
-					paths = append(paths, ePath)
-				}
+		stepsTaken := maxBeforeTurning - p.CurrentRemaining
+		if stepsTaken >= minBeforeTurning {
+			if p.CurrentV == len(grid)-1 && p.CurrentH == len(grid[0])-1 {
+				break
 			}
 
-			wH := p.CurrentH - 1
-			if wH >= 0 {
-				wC := grid[p.CurrentV][wH]
-				if wC.HeatLoss+p.HeatLoss < wC.W[2] {
-					wC.W[2] = wC.HeatLoss + p.HeatLoss
+			if p.CurrentDirection == 'N' || p.CurrentDirection == 'S' {
+				// E & W
+				eH := p.CurrentH + 1
+				if eH < len(grid[p.CurrentV]) {
+					eC := grid[p.CurrentV][eH]
+					if eC.HeatLoss+p.HeatLoss < eC.E[maxBeforeTurning-1] {
+						eC.E[maxBeforeTurning-1] = eC.HeatLoss + p.HeatLoss
 
-					wClone := make([]Step, len(p.Steps))
-					copy(wClone, p.Steps)
-					wClone = append(wClone, Step{p.CurrentV, wH})
+						eClone := make([]Step, len(p.Steps))
+						copy(eClone, p.Steps)
+						eClone = append(eClone, Step{p.CurrentV, eH})
 
-					wPath := Path{p.CurrentV, wH, 'W', 2, wC.W[2], wClone}
-					paths = append(paths, wPath)
+						ePath := Path{p.CurrentV, eH, 'E', maxBeforeTurning - 1, eC.E[maxBeforeTurning-1], eClone}
+						paths = append(paths, ePath)
+					}
 				}
-			}
-		} else if p.CurrentDirection == 'E' || p.CurrentDirection == 'W' {
-			nV := p.CurrentV - 1
-			if nV >= 0 {
-				nC := grid[nV][p.CurrentH]
-				if nC.HeatLoss+p.HeatLoss < nC.N[2] {
-					nC.N[2] = nC.HeatLoss + p.HeatLoss
 
-					nClone := make([]Step, len(p.Steps))
-					copy(nClone, p.Steps)
-					nClone = append(nClone, Step{nV, p.CurrentH})
+				wH := p.CurrentH - 1
+				if wH >= 0 {
+					wC := grid[p.CurrentV][wH]
+					if wC.HeatLoss+p.HeatLoss < wC.W[maxBeforeTurning-1] {
+						wC.W[maxBeforeTurning-1] = wC.HeatLoss + p.HeatLoss
 
-					nPath := Path{nV, p.CurrentH, 'N', 2, nC.N[2], nClone}
-					paths = append(paths, nPath)
+						wClone := make([]Step, len(p.Steps))
+						copy(wClone, p.Steps)
+						wClone = append(wClone, Step{p.CurrentV, wH})
+
+						wPath := Path{p.CurrentV, wH, 'W', maxBeforeTurning - 1, wC.W[maxBeforeTurning-1], wClone}
+						paths = append(paths, wPath)
+					}
 				}
-			}
+			} else if p.CurrentDirection == 'E' || p.CurrentDirection == 'W' {
+				nV := p.CurrentV - 1
+				if nV >= 0 {
+					nC := grid[nV][p.CurrentH]
+					if nC.HeatLoss+p.HeatLoss < nC.N[maxBeforeTurning-1] {
+						nC.N[maxBeforeTurning-1] = nC.HeatLoss + p.HeatLoss
 
-			sV := p.CurrentV + 1
-			if sV < len(grid) {
-				sC := grid[sV][p.CurrentH]
-				if sC.HeatLoss+p.HeatLoss < sC.S[2] {
-					sC.S[2] = sC.HeatLoss + p.HeatLoss
+						nClone := make([]Step, len(p.Steps))
+						copy(nClone, p.Steps)
+						nClone = append(nClone, Step{nV, p.CurrentH})
 
-					sClone := make([]Step, len(p.Steps))
-					copy(sClone, p.Steps)
-					sClone = append(sClone, Step{sV, p.CurrentH})
-
-					sPath := Path{sV, p.CurrentH, 'S', 2, sC.S[2], sClone}
-					paths = append(paths, sPath)
+						nPath := Path{nV, p.CurrentH, 'N', maxBeforeTurning - 1, nC.N[maxBeforeTurning-1], nClone}
+						paths = append(paths, nPath)
+					}
 				}
+
+				sV := p.CurrentV + 1
+				if sV < len(grid) {
+					sC := grid[sV][p.CurrentH]
+					if sC.HeatLoss+p.HeatLoss < sC.S[maxBeforeTurning-1] {
+						sC.S[maxBeforeTurning-1] = sC.HeatLoss + p.HeatLoss
+
+						sClone := make([]Step, len(p.Steps))
+						copy(sClone, p.Steps)
+						sClone = append(sClone, Step{sV, p.CurrentH})
+
+						sPath := Path{sV, p.CurrentH, 'S', maxBeforeTurning - 1, sC.S[maxBeforeTurning-1], sClone}
+						paths = append(paths, sPath)
+					}
+				}
+			} else {
+				panic("bad direction")
 			}
-		} else {
-			panic("bad direction")
 		}
 
 		if p.CurrentRemaining > 0 {
@@ -248,25 +267,27 @@ func run(part2 bool, input string) any {
 		})
 	}
 
-	fmt.Println("Printing solve:")
+	print := false
+	if print {
+		fmt.Println("Printing solve:")
+		for v := range grid {
+			for h := range grid[v] {
+				printed := false
+			printHash:
+				for _, s := range p.Steps {
+					if s.H == h && s.V == v {
+						printed = true
+						fmt.Printf("#")
+						break printHash
+					}
+				}
 
-	for v := range grid {
-		for h := range grid[v] {
-			printed := false
-		printHash:
-			for _, s := range p.Steps {
-				if s.H == h && s.V == v {
-					printed = true
-					fmt.Printf("#")
-					break printHash
+				if !printed {
+					fmt.Printf("%v", grid[v][h].HeatLoss)
 				}
 			}
-
-			if !printed {
-				fmt.Printf("%v", grid[v][h].HeatLoss)
-			}
+			fmt.Println()
 		}
-		fmt.Println()
 	}
 
 	// Are we not counting the heat loss at position [0][0]?
